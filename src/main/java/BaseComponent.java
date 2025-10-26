@@ -1,13 +1,13 @@
-import mock.selenium.WebDriver;
-import mock.selenium.WebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 
 public abstract class BaseComponent extends BaseActions {
     protected WebDriver driver;
-    protected WebElement root;
+    protected By rootLocator;
 
-    public BaseComponent(WebDriver driver, WebElement root) {
+    public BaseComponent(WebDriver driver, By rootLocator) {
         super(driver);
         this.driver = driver;
-        this.root = root;
+        this.rootLocator = rootLocator;
     }
 }

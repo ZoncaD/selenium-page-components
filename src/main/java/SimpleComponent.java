@@ -1,9 +1,9 @@
-import mock.selenium.WebDriver;
-import mock.selenium.WebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 
 public class SimpleComponent extends BaseComponent {
-    public SimpleComponent(WebDriver driver, WebElement root) {
-        super(driver, root);
+    public SimpleComponent(WebDriver driver, By rootLocator) {
+        super(driver, rootLocator);
     }
 
     public SimpleComponent performSimpleComponentAction() {

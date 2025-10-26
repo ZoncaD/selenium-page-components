@@ -1,10 +1,10 @@
-import mock.selenium.WebDriver;
-import mock.selenium.WebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 
 public class ModalSpawningComponent<T extends IComponentHost<T>> extends BaseParentedComponent<T> {
 
-    public ModalSpawningComponent(WebDriver driver, WebElement root, T parent) {
-        super(driver, parent, root);
+    public ModalSpawningComponent(WebDriver driver, By rootLocator, T parent) {
+        super(driver, parent, rootLocator);
     }
 
     public ModalSpawningComponent<T> performModalSpawningComponentAction() {
@@ -12,6 +12,6 @@ public class ModalSpawningComponent<T extends IComponentHost<T>> extends BasePar
     }
 
     public ModalComponent<T> openModal() {
-        return new ModalComponent<>(driver, parent, new WebElement());
+        return new ModalComponent<>(driver, parent, By.xpath("//*"));
     }
 }

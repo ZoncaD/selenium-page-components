@@ -1,9 +1,9 @@
-import mock.selenium.WebDriver;
-import mock.selenium.WebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 
 public class ModalComponent<T extends IComponentHost<T>> extends BaseParentedComponent<T> implements ISimpleComponentHost<ModalComponent<T>> {
-    public ModalComponent(WebDriver driver, T parent, WebElement root) {
-        super(driver, parent, root);
+    public ModalComponent(WebDriver driver, T parent, By rootLocator) {
+        super(driver, parent, rootLocator);
     }
 
     @Override
@@ -21,6 +21,6 @@ public class ModalComponent<T extends IComponentHost<T>> extends BaseParentedCom
 
     @Override
     public SimpleComponent getSimpleComponent() {
-        return new SimpleComponent(driver, new WebElement());
+        return new SimpleComponent(driver, By.xpath("//*"));
     }
 }

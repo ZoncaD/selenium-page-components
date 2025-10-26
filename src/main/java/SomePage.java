@@ -1,14 +1,14 @@
-import mock.selenium.WebDriver;
-import mock.selenium.WebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 
 public class SomePage extends BasePage implements IModalSpawningComponentHost<SomePage>, IParentComponentHost<SomePage> {
+    private ModalSpawningComponent<SomePage> modalSpawningComponent;
+    private ParentComponent parentComponent;
 
     public SomePage(WebDriver driver) {
         super(driver);
-    }
-
-    public SomePage() {
-        this(new WebDriver());
+        modalSpawningComponent = new ModalSpawningComponent<>(driver, By.xpath("//*"), this);
+        parentComponent = new ParentComponent(driver, By.xpath("//*"));
     }
 
     @Override
@@ -18,12 +18,12 @@ public class SomePage extends BasePage implements IModalSpawningComponentHost<So
 
     @Override
     public ModalSpawningComponent<SomePage> getModalSpawningComponent() {
-        return new ModalSpawningComponent<>(driver, new WebElement(), this);
+        return modalSpawningComponent;
     }
 
     @Override
     public ParentComponent getParentComponent() {
-        return new ParentComponent(driver, new WebElement());
+        return parentComponent;
     }
 
     public int getSomePageNumber(int num) {
@@ -33,5 +33,4 @@ public class SomePage extends BasePage implements IModalSpawningComponentHost<So
     public SomePage performSomePageAction() {
         return this;
     }
-
 }

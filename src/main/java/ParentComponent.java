@@ -1,9 +1,9 @@
-import mock.selenium.WebDriver;
-import mock.selenium.WebElement;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 
 public class ParentComponent extends BaseComponent implements ISimpleComponentHost<ParentComponent>{
-    public ParentComponent(WebDriver driver, WebElement root) {
-        super(driver, root);
+    public ParentComponent(WebDriver driver, By rootLocator) {
+        super(driver, rootLocator);
     }
 
     @Override
@@ -13,7 +13,7 @@ public class ParentComponent extends BaseComponent implements ISimpleComponentHo
 
     @Override
     public SimpleComponent getSimpleComponent() {
-        return new SimpleComponent(driver, new WebElement());
+        return new SimpleComponent(driver, By.xpath("//*"));
     }
 
     public ParentComponent performParentComponentAction() {
