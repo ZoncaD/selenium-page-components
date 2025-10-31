@@ -1,10 +1,12 @@
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-public class ModalSpawningComponent<T extends IComponentHost<T>> extends BaseParentedComponent<T> {
+public class ModalSpawningComponent<T extends IComponentHost<T>> extends BaseComponent<T> {
+    private final ModalComponent<T> modalComponent;
 
-    public ModalSpawningComponent(WebDriver driver, By rootLocator, T parent) {
+    public ModalSpawningComponent(WebDriver driver, T parent, By rootLocator) {
         super(driver, parent, rootLocator);
+        modalComponent = new ModalComponent<>(driver, parent, By.xpath("//*"));
     }
 
     public ModalSpawningComponent<T> performModalSpawningComponentAction() {
@@ -12,6 +14,6 @@ public class ModalSpawningComponent<T extends IComponentHost<T>> extends BasePar
     }
 
     public ModalComponent<T> openModal() {
-        return new ModalComponent<>(driver, parent, By.xpath("//*"));
+        return modalComponent;
     }
 }

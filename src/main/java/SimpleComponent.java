@@ -1,13 +1,14 @@
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-public class SimpleComponent extends BaseComponent {
-    public SimpleComponent(WebDriver driver, By rootLocator) {
-        super(driver, rootLocator);
+public class SimpleComponent<T extends IComponentHost<T>> extends BaseComponent<T> {
+    public SimpleComponent(WebDriver driver, T parent, By rootLocator) {
+        super(driver, parent, rootLocator);
     }
 
-    public SimpleComponent performSimpleComponentAction() {
-        return this;
+    public T performSimpleComponentAction() {
+        root.findElement(By.xpath(".//*")).click();
+        return parent;
     }
 
     public String getSimpleComponentValue() {

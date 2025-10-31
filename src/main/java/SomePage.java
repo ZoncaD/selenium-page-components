@@ -1,14 +1,14 @@
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-public class SomePage extends BasePage implements IModalSpawningComponentHost<SomePage>, IParentComponentHost<SomePage> {
-    private ModalSpawningComponent<SomePage> modalSpawningComponent;
-    private ParentComponent parentComponent;
+public class SomePage extends BasePage implements IComponentHost<SomePage> {
+    private final ModalSpawningComponent<SomePage> modalSpawningComponent;
+    private final ParentComponent<SomePage> parentComponent;
 
     public SomePage(WebDriver driver) {
         super(driver);
-        modalSpawningComponent = new ModalSpawningComponent<>(driver, By.xpath("//*"), this);
-        parentComponent = new ParentComponent(driver, By.xpath("//*"));
+        modalSpawningComponent = new ModalSpawningComponent<>(driver, this, By.xpath("//*"));
+        parentComponent = new ParentComponent<>(driver, this, By.xpath("//*"));
     }
 
     @Override
@@ -16,13 +16,11 @@ public class SomePage extends BasePage implements IModalSpawningComponentHost<So
         return this;
     }
 
-    @Override
     public ModalSpawningComponent<SomePage> getModalSpawningComponent() {
         return modalSpawningComponent;
     }
 
-    @Override
-    public ParentComponent getParentComponent() {
+    public ParentComponent<SomePage> getParentComponent() {
         return parentComponent;
     }
 
@@ -32,5 +30,29 @@ public class SomePage extends BasePage implements IModalSpawningComponentHost<So
 
     public SomePage performSomePageAction() {
         return this;
+    }
+
+    public SomePage performModalSpawningComponentAction() {
+        return null;
+    }
+
+    public ModalComponent<SomePage> openModal() {
+        return null;
+    }
+
+    public SomePage performParentComponentAction() {
+        return null;
+    }
+
+    public boolean isParentComponentSomething() {
+        return false;
+    }
+
+    public SomePage performSimpleComponentAction() {
+        return null;
+    }
+
+    public String getSimpleComponentValue() {
+        return "";
     }
 }
