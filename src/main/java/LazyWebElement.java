@@ -1,11 +1,10 @@
 import org.jspecify.annotations.Nullable;
 import org.openqa.selenium.*;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.WeakHashMap;
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class LazyWebElement implements WebElement {
     private final WebDriver driver;
@@ -20,16 +19,11 @@ public class LazyWebElement implements WebElement {
 
     public LazyWebElement(WebDriver driver, LazyWebElement parent, By locator, Integer index) {
         if (index != null) {
-            if (index < 1){
-                throw new IllegalArgumentException("Argument 'index' must be either null or a positive integer");
+            if (index < 0) {
+                throw new IllegalArgumentException("Argument 'index' must be either null or a non-negative integer");
             }
             else {
-                // We must reuse the exact identifier object already in use, if one exists, to avoid memory leak.
-                final WebElementListIdentifier newIdentifier = new WebElementListIdentifier(parent, locator);
-                Optional<WebElementListIdentifier> exactKeyObj = instanceLists.keySet().stream()
-                        .filter(key -> key.equals(newIdentifier))
-                        .findFirst();
-                listIdentifier = exactKeyObj.orElse(newIdentifier);
+                listIdentifier = getListIdentifier(parent, locator);
             }
         }
         else {
@@ -54,6 +48,26 @@ public class LazyWebElement implements WebElement {
         this(driver, parent, locator, null);
     }
 
+    public List<LazyWebElement> findElementsAsProxies(By by) {
+        List<WebElement> matches = getInstance().findElements(by);
+        if (!matches.isEmpty()) {
+            WebElementListIdentifier listId = getListIdentifier(this, by);
+            instanceLists.put(listId, matches);
+        }
+
+        return IntStream.range(0, matches.size())
+                .mapToObj(i -> new LazyWebElement(driver, this, by, i))
+                .toList();
+    }
+
+    private WebElementListIdentifier getListIdentifier(LazyWebElement parent, By locator) {
+        final WebElementListIdentifier newIdentifier = new WebElementListIdentifier(parent, locator);
+        Optional<WebElementListIdentifier> exactKeyObj = instanceLists.keySet().stream()
+                .filter(key -> key.equals(newIdentifier))
+                .findFirst();
+        return exactKeyObj.orElse(newIdentifier);
+    }
+
     private WebElement getNewInstance() {
         WebElement freshInstance;
         if (parent == null) {
@@ -66,24 +80,31 @@ public class LazyWebElement implements WebElement {
     }
 
     private WebElement getNewInstanceFromList() {
-        List<WebElement> matches;
-        if (parent == null) {
-            matches = driver.findElements(locator);
-        }
-        else  {
-            matches = parent.getInstance().findElements(locator);
+        List<WebElement> matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
+        if (matches.size() <= index || Boolean.TRUE.equals(ExpectedConditions.stalenessOf(matches.get(index)).apply(driver))) {
+            if (parent == null) {
+                matches = driver.findElements(locator);
+            }
+            else  {
+                matches = parent.getInstance().findElements(locator);
+            }
         }
 
-        instanceLists.put(listIdentifier, matches);
+        if (matches.isEmpty()) {
+            instanceLists.remove(listIdentifier);
+        }
+        else {
+            instanceLists.put(listIdentifier, matches);
+        }
 
-        if (matches.size() < index) {
+        if (matches.size() <= index) {
             throw new NoSuchElementException("No element with index " + index + " found for locator " + locator);
         }
 
-        return matches.get(index - 1);
+        return matches.get(index);
     }
 
-    WebElement getInstance() {
+    private WebElement getInstance() {
         if (instance == null || Boolean.TRUE.equals(ExpectedConditions.stalenessOf(instance).apply(driver))) {
             instance = listIdentifier == null ? getNewInstance() : getNewInstanceFromList();
         }
