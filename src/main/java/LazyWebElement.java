@@ -1,3 +1,5 @@
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.openqa.selenium.*;
 import org.openqa.selenium.NoSuchElementException;
@@ -6,18 +8,19 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import java.util.*;
 import java.util.stream.IntStream;
 
+@NullMarked
 public class LazyWebElement implements WebElement {
     private final WebDriver driver;
     private final By locator;
-    private final LazyWebElement parent;
+    @Nullable private final LazyWebElement parent;
 
     private static final WeakHashMap<WebElementListIdentifier, List<WebElement>> instanceLists = new WeakHashMap<>();
-    private final WebElementListIdentifier listIdentifier;
-    private final Integer index;
+    @Nullable private final WebElementListIdentifier listIdentifier;
+    @Nullable private final Integer index;
 
-    private WebElement instance;
+    @Nullable private WebElement instance;
 
-    public LazyWebElement(WebDriver driver, LazyWebElement parent, By locator, Integer index) {
+    public LazyWebElement(WebDriver driver, @Nullable LazyWebElement parent, By locator, @Nullable Integer index) {
         if (index != null) {
             if (index < 0) {
                 throw new IllegalArgumentException("Argument 'index' must be either null or a non-negative integer");
@@ -60,7 +63,7 @@ public class LazyWebElement implements WebElement {
                 .toList();
     }
 
-    private WebElementListIdentifier getListIdentifier(LazyWebElement parent, By locator) {
+    private WebElementListIdentifier getListIdentifier(@Nullable LazyWebElement parent, By locator) {
         final WebElementListIdentifier newIdentifier = new WebElementListIdentifier(parent, locator);
         Optional<WebElementListIdentifier> exactKeyObj = instanceLists.keySet().stream()
                 .filter(key -> key.equals(newIdentifier))
@@ -79,9 +82,9 @@ public class LazyWebElement implements WebElement {
         return freshInstance;
     }
 
-    private WebElement getNewInstanceFromList() {
+    private WebElement getNewInstanceFromList(WebElementListIdentifier listIdentifier, Integer index) {
         List<WebElement> matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
-        if (matches.size() <= index || Boolean.TRUE.equals(ExpectedConditions.stalenessOf(matches.get(index)).apply(driver))) {
+        if (matches.size() <= index || ExpectedConditions.stalenessOf(matches.get(index)).apply(driver)) {
             if (parent == null) {
                 matches = driver.findElements(locator);
             }
@@ -106,7 +109,7 @@ public class LazyWebElement implements WebElement {
 
     private WebElement getInstance() {
         if (instance == null || Boolean.TRUE.equals(ExpectedConditions.stalenessOf(instance).apply(driver))) {
-            instance = listIdentifier == null ? getNewInstance() : getNewInstanceFromList();
+            instance = (listIdentifier == null || index == null) ? getNewInstance() : getNewInstanceFromList(listIdentifier, index);
         }
 
         return instance;
@@ -150,26 +153,31 @@ public class LazyWebElement implements WebElement {
     }
 
     @Override
+    @Nullable
     public String getDomProperty(String name) {
         return getInstance().getDomProperty(name);
     }
 
     @Override
+    @Nullable
     public String getDomAttribute(String name) {
         return getInstance().getDomAttribute(name);
     }
 
     @Override
-    public @Nullable String getAttribute(String name) {
+    @Nullable
+    public String getAttribute(String name) {
         return getInstance().getAttribute(name);
     }
 
     @Override
+    @Nullable
     public String getAriaRole() {
         return getInstance().getAriaRole();
     }
 
     @Override
+    @Nullable
     public String getAccessibleName() {
         return getInstance().getAccessibleName();
     }
@@ -235,10 +243,10 @@ public class LazyWebElement implements WebElement {
     }
 
     private static class WebElementListIdentifier {
-        public final LazyWebElement parent;
+        @Nullable public final LazyWebElement parent;
         public final By locator;
 
-        public WebElementListIdentifier(LazyWebElement parent, By locator) {
+        public WebElementListIdentifier(@Nullable LazyWebElement parent, By locator) {
             this.parent = parent;
             this.locator = locator;
         }
