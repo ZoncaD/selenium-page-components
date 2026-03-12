@@ -1,16 +1,19 @@
 package io.github.zoncad.pagecomponents;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
 import org.openqa.selenium.*;
 import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 @NullMarked
 public class RefreshingWebElement implements WebElement {
+    private static final int MAX_REFRESHES = 1;
     protected final WebDriver driver;
     @Nullable protected final RefreshingWebElement parent;
     protected final By locator;
@@ -25,7 +28,7 @@ public class RefreshingWebElement implements WebElement {
 
     public static RefreshingWebElement of(WebDriver driver, @Nullable RefreshingWebElement parent, By locator) {
         RefreshingWebElement theElement = new RefreshingWebElement(driver, parent, locator);
-        theElement.getInstance();
+        theElement.getInstance(); // Locate element to ensure it exists
         return theElement;
     }
 
@@ -35,7 +38,7 @@ public class RefreshingWebElement implements WebElement {
         }
         else {
             RefreshingWebElement theElement = new IndexedRefreshingWebElement(driver, parent, locator, index);
-            theElement.getInstance();
+            theElement.getInstance(); // Locate element to ensure it exists
             return theElement;
         }
     }
@@ -79,72 +82,72 @@ public class RefreshingWebElement implements WebElement {
 
     @Override
     public void click() {
-        getInstance().click();
+        getInstanceAndThenPerform(WebElement::click);
     }
 
     @Override
     public void submit() {
-        getInstance().submit();
+        getInstanceAndThenPerform(WebElement::submit);
     }
 
     @Override
     public void sendKeys(CharSequence... keysToSend) {
-        getInstance().sendKeys(keysToSend);
+        getInstanceAndThenPerform(element -> element.sendKeys(keysToSend));
     }
 
     @Override
     public void clear() {
-        getInstance().clear();
+        getInstanceAndThenPerform(WebElement::clear);
     }
 
     @Override
     public String getTagName() {
-        return getInstance().getTagName();
+        return getInstanceAndThenGetValue(WebElement::getTagName);
     }
 
     @Override
     @Nullable
     public String getDomProperty(String name) {
-        return getInstance().getDomProperty(name);
+        return getInstanceAndThenGetValue(element -> element.getDomProperty(name));
     }
 
     @Override
     @Nullable
     public String getDomAttribute(String name) {
-        return getInstance().getDomAttribute(name);
+        return getInstanceAndThenGetValue(element -> element.getDomAttribute(name));
     }
 
     @Override
     @Nullable
     public String getAttribute(String name) {
-        return getInstance().getAttribute(name);
+        return getInstanceAndThenGetValue(element -> element.getAttribute(name));
     }
 
     @Override
     @Nullable
     public String getAriaRole() {
-        return getInstance().getAriaRole();
+        return getInstanceAndThenGetValue(WebElement::getAriaRole);
     }
 
     @Override
     @Nullable
     public String getAccessibleName() {
-        return getInstance().getAccessibleName();
+        return getInstanceAndThenGetValue(WebElement::getAccessibleName);
     }
 
     @Override
     public boolean isSelected() {
-        return getInstance().isSelected();
+        return getInstanceAndThenGetValue(WebElement::isSelected);
     }
 
     @Override
     public boolean isEnabled() {
-        return getInstance().isEnabled();
+        return getInstanceAndThenGetValue(WebElement::isEnabled);
     }
 
     @Override
     public String getText() {
-        return getInstance().getText();
+        return getInstanceAndThenGetValue(WebElement::getText);
     }
 
     @Override
@@ -159,37 +162,37 @@ public class RefreshingWebElement implements WebElement {
 
     @Override
     public SearchContext getShadowRoot() {
-        return getInstance().getShadowRoot();
+        return getInstanceAndThenGetValue(WebElement::getShadowRoot);
     }
 
     @Override
     public boolean isDisplayed() {
-        return getInstance().isDisplayed();
+        return getInstanceAndThenGetValue(WebElement::isDisplayed);
     }
 
     @Override
     public Point getLocation() {
-        return getInstance().getLocation();
+        return getInstanceAndThenGetValue(WebElement::getLocation);
     }
 
     @Override
     public Dimension getSize() {
-        return getInstance().getSize();
+        return getInstanceAndThenGetValue(WebElement::getSize);
     }
 
     @Override
     public Rectangle getRect() {
-        return getInstance().getRect();
+        return getInstanceAndThenGetValue(WebElement::getRect);
     }
 
     @Override
     public String getCssValue(String propertyName) {
-        return getInstance().getCssValue(propertyName);
+        return getInstanceAndThenGetValue(element -> element.getCssValue(propertyName));
     }
 
     @Override
     public <X> X getScreenshotAs(OutputType<X> target) throws WebDriverException {
-        return getInstance().getScreenshotAs(target);
+        return getInstanceAndThenGetValue(element -> element.getScreenshotAs(target));
     }
 
     protected WebElement getFreshInstance() {
@@ -198,18 +201,43 @@ public class RefreshingWebElement implements WebElement {
             freshInstance = driver.findElement(locator);
         }
         else  {
-            freshInstance = parent.getInstance().findElement(locator);
+            freshInstance = parent.getInstanceAndThenGetValue(element -> element.findElement(locator));
         }
 
         return freshInstance;
     }
 
     private WebElement getInstance() {
-        if (instance == null || ExpectedConditions.stalenessOf(instance).apply(driver)) {
+        if (instance == null) {
             instance = getFreshInstance();
         }
 
-        return Objects.requireNonNull(instance, "instance must not be null");
+        return instance;
+    }
+
+    @NullUnmarked
+    private <R> R getInstanceAndThenGetValue(Function<WebElement, R> valueMapper) {
+        for (int i = 0; i <= MAX_REFRESHES; ++i) {
+            try {
+                return valueMapper.apply(getInstance());
+            } catch (StaleElementReferenceException ex) {
+                instance = null;
+            }
+        }
+        throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refreshes");
+    }
+
+    @NullUnmarked
+    private void getInstanceAndThenPerform(Consumer<WebElement> action) {
+        for (int i = 0; i <= MAX_REFRESHES; ++i) {
+            try {
+                action.accept(getInstance());
+                return;
+            } catch (StaleElementReferenceException ex) {
+                instance = null;
+            }
+        }
+        throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refreshes");
     }
 
     private static class IndexedRefreshingWebElement extends RefreshingWebElement {
@@ -244,8 +272,8 @@ public class RefreshingWebElement implements WebElement {
         @Override
         protected WebElement getFreshInstance() {
             List<WebElement> matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
-            if (matches.size() <= index || ExpectedConditions.stalenessOf(matches.get(index)).apply(driver)) {
-                updateListInstances();
+            if (matches.size() <= index) {
+                updateListInstances(driver, listIdentifier, parent, locator);
             }
 
             if (matches.size() <= index) {
@@ -274,10 +302,6 @@ public class RefreshingWebElement implements WebElement {
             return matches.size();
         }
 
-        private int updateListInstances() {
-            return updateListInstances(driver, listIdentifier, parent, locator);
-        }
-
         public static WebElementListIdentifier getListIdentifier(@Nullable RefreshingWebElement parent, By locator) {
             final WebElementListIdentifier newIdentifier = new WebElementListIdentifier(parent, locator);
             Optional<WebElementListIdentifier> exactKeyObj = instanceLists.keySet().stream()
@@ -286,26 +310,8 @@ public class RefreshingWebElement implements WebElement {
             return exactKeyObj.orElse(newIdentifier);
         }
 
-        private static class WebElementListIdentifier {
-            @Nullable public final RefreshingWebElement parent;
-            public final By locator;
+        private record WebElementListIdentifier(@Nullable RefreshingWebElement parent, By locator) {
 
-            public WebElementListIdentifier(@Nullable RefreshingWebElement parent, By locator) {
-                this.parent = parent;
-                this.locator = locator;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (o == null || getClass() != o.getClass()) return false;
-                WebElementListIdentifier that = (WebElementListIdentifier) o;
-                return Objects.equals(parent, that.parent) && Objects.equals(locator, that.locator);
-            }
-
-            @Override
-            public int hashCode() {
-                return Objects.hash(parent, locator);
-            }
         }
     }
 }
