@@ -11,12 +11,16 @@ public abstract class BaseComponent<T extends IComponentHost<T>> extends Base {
 
     public BaseComponent(WebDriver driver, T parent, By rootLocator, Integer index) {
         super(driver);
+        this.parent = parent;
 
         RefreshingWebElement parentElement = null;
         if (parent instanceof BaseComponent<?>) {
             parentElement = ((BaseComponent<?>) parent).root;
+            this.root = RefreshingWebElement.of(parentElement, rootLocator, index);
         }
-        this.root = RefreshingWebElement.of(driver, parentElement, rootLocator, index);
+        else {
+            this.root = RefreshingWebElement.of(driver, rootLocator, index);
+        }
     }
 
     public BaseComponent(WebDriver driver, T parent, By rootLocator) {
