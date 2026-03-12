@@ -9,12 +9,14 @@ import io.github.zoncad.pagecomponents.IComponentHost;
 import java.util.List;
 
 public class ComponentsPage extends BasePage implements IComponentHost<ComponentsPage> {
+    private final HeaderComponent<ComponentsPage> headerNav;
+    private final SideNavComponent<ComponentsPage> sideNav;
 
     public ComponentsPage(WebDriver driver) {
         super(driver);
-        if (!"Components • Angular Material".equals(driver.getTitle())) {
-            throw new IllegalStateException("This is not the Components page. Current URL: " + driver.getCurrentUrl());
-        }
+        waitForPresenceOfElementLocated(By.xpath("//*[@id='category-summary']//div[contains(text(), 'Angular Material offers a wide variety of UI components')]"));
+        headerNav = new HeaderComponent<>(driver, this);
+        sideNav = new SideNavComponent<>(driver, this);
     }
 
     @Override
@@ -22,15 +24,23 @@ public class ComponentsPage extends BasePage implements IComponentHost<Component
         return this;
     }
 
-    public List<ComponentCard> getComponentCardsWithRefreshingWebElements() {
+    public List<PseudoCard> getComponentCardsWithRefreshingWebElements() {
         return RefreshingWebElement.ofAll(driver, By.cssSelector("a.docs-component-category-list-item")).stream()
-                .map(ComponentCard::new)
+                .map(PseudoCard::new)
                 .toList();
     }
 
-    public List<ComponentCard> getComponentCardsWithWebElements() {
+    public List<PseudoCard> getComponentCardsWithWebElements() {
         return driver.findElements(By.cssSelector("a.docs-component-category-list-item")).stream()
-                .map(ComponentCard::new)
+                .map(PseudoCard::new)
                 .toList();
+    }
+
+    public HeaderComponent<ComponentsPage> getHeaderComponent() {
+        return headerNav;
+    }
+
+    public SideNavComponent<ComponentsPage> getSideNavComponent() {
+        return sideNav;
     }
 }

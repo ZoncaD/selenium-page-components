@@ -3,10 +3,10 @@ package io.github.zoncad.example.angularmaterial;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
-public class ComponentCard {
+public class PseudoCard {
     WebElement root;
 
-    public ComponentCard(WebElement root) {
+    public PseudoCard(WebElement root) {
         this.root = root;
     }
 

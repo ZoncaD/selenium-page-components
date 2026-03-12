@@ -13,9 +13,8 @@ public abstract class BaseComponent<T extends IComponentHost<T>> extends Base {
         super(driver);
         this.parent = parent;
 
-        RefreshingWebElement parentElement = null;
         if (parent instanceof BaseComponent<?>) {
-            parentElement = ((BaseComponent<?>) parent).root;
+            RefreshingWebElement parentElement = ((BaseComponent<?>) parent).root;
             this.root = RefreshingWebElement.of(parentElement, rootLocator, index);
         }
         else {
