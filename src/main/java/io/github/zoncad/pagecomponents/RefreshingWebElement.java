@@ -12,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 @NullMarked
-public class RefreshingWebElement implements WebElement {
+public abstract class RefreshingWebElement implements WebElement {
     private static final int MAX_REFRESHES = 1;
     protected final WebDriver driver;
     @Nullable protected final RefreshingWebElement parent;
@@ -27,9 +27,7 @@ public class RefreshingWebElement implements WebElement {
     }
 
     public static RefreshingWebElement of(WebDriver driver, @Nullable RefreshingWebElement parent, By locator) {
-        RefreshingWebElement theElement = new RefreshingWebElement(driver, parent, locator);
-        theElement.getInstance(); // Locate element to ensure it exists
-        return theElement;
+        return new SpecificRefreshingWebElement(driver, parent, locator);
     }
 
     public static RefreshingWebElement of(WebDriver driver, @Nullable RefreshingWebElement parent, By locator, @Nullable Integer index) {
@@ -37,9 +35,7 @@ public class RefreshingWebElement implements WebElement {
             return of(driver, parent, locator);
         }
         else {
-            RefreshingWebElement theElement = new IndexedRefreshingWebElement(driver, parent, locator, index);
-            theElement.getInstance(); // Locate element to ensure it exists
-            return theElement;
+            return new IndexedRefreshingWebElement(driver, parent, locator, index);
         }
     }
 
@@ -195,17 +191,7 @@ public class RefreshingWebElement implements WebElement {
         return getInstanceAndThenGetValue(element -> element.getScreenshotAs(target));
     }
 
-    protected WebElement getFreshInstance() {
-        WebElement freshInstance;
-        if (parent == null) {
-            freshInstance = driver.findElement(locator);
-        }
-        else  {
-            freshInstance = parent.getInstanceAndThenGetValue(element -> element.findElement(locator));
-        }
-
-        return freshInstance;
-    }
+    abstract protected WebElement getFreshInstance();
 
     private WebElement getInstance() {
         if (instance == null) {
@@ -240,7 +226,28 @@ public class RefreshingWebElement implements WebElement {
         throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refreshes");
     }
 
+    private static class SpecificRefreshingWebElement extends RefreshingWebElement {
+        private SpecificRefreshingWebElement(WebDriver driver, @Nullable RefreshingWebElement parent, By locator) {
+            super(driver, parent, locator);
+            instance = getFreshInstance();
+        }
+
+        @Override
+        protected WebElement getFreshInstance() {
+            WebElement freshInstance;
+            if (parent == null) {
+                freshInstance = driver.findElement(locator);
+            }
+            else  {
+                freshInstance = parent.getInstanceAndThenGetValue(element -> element.findElement(locator));
+            }
+
+            return freshInstance;
+        }
+    }
+
     private static class IndexedRefreshingWebElement extends RefreshingWebElement {
+        // TODO: Make instanceLists synchronized
         private static final WeakHashMap<WebElementListIdentifier, List<WebElement>> instanceLists = new WeakHashMap<>();
         private final WebElementListIdentifier listIdentifier;
         private final int index;
@@ -254,6 +261,7 @@ public class RefreshingWebElement implements WebElement {
                 listIdentifier = getListIdentifier(parent, locator);
             }
             this.index = index;
+            instance = getFreshInstance();
         }
 
         @Override
@@ -271,9 +279,11 @@ public class RefreshingWebElement implements WebElement {
 
         @Override
         protected WebElement getFreshInstance() {
+            // TODO: Reevaluate to ensure instance returned is fresh
             List<WebElement> matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
-            if (matches.size() <= index) {
+            if (matches.size() <= index || instance == matches.get(index)) {
                 updateListInstances(driver, listIdentifier, parent, locator);
+                matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
             }
 
             if (matches.size() <= index) {
@@ -288,7 +298,7 @@ public class RefreshingWebElement implements WebElement {
             if (parent == null) {
                 matches = driver.findElements(locator);
             }
-            else  {
+            else {
                 matches = parent.getInstance().findElements(locator);
             }
 
