@@ -13,7 +13,7 @@ import java.util.stream.IntStream;
 
 @NullMarked
 public abstract class RefreshingWebElement implements WebElement {
-    private static final int MAX_REFRESHES = 1;
+    private static final int MAX_REFRESHES = 2;
     protected final SearchContext searchContext;
     protected final By locator;
 
@@ -38,7 +38,7 @@ public abstract class RefreshingWebElement implements WebElement {
     }
 
     public static List<RefreshingWebElement> listLocatedBy(SearchContext searchContext, By locator) {
-        int numMatches = WebElementList.updateListInstances(searchContext, locator);
+        int numMatches = WebElementListCache.updateListInstances(searchContext, locator);
 
         return IntStream.range(0, numMatches)
                 .mapToObj(i -> locatedBy(searchContext, locator, i))
@@ -227,7 +227,7 @@ public abstract class RefreshingWebElement implements WebElement {
     }
 
     private static class IndexedRefreshingWebElement extends RefreshingWebElement {
-        private final WebElementList.ListIdentifier listIdentifier;
+        private final WebElementListCache.ListIdentifier listIdentifier;
         private final int index;
 
         private IndexedRefreshingWebElement(SearchContext searchContext, By locator, int index) {
@@ -235,10 +235,9 @@ public abstract class RefreshingWebElement implements WebElement {
             if (index < 0) {
                 throw new IllegalArgumentException("Argument 'index' must be a non-negative integer");
             }
-            else {
-                listIdentifier = WebElementList.getListIdentifier(searchContext, locator);
-            }
+
             this.index = index;
+            listIdentifier = WebElementListCache.getListIdentifier(searchContext, locator);
             instance = getFreshInstance();
         }
 
@@ -257,11 +256,13 @@ public abstract class RefreshingWebElement implements WebElement {
 
         @Override
         protected WebElement getFreshInstance() {
-            // TODO: Reevaluate to ensure instance returned is fresh
-            List<WebElement> matches = WebElementList.getListInstances(listIdentifier);
-            if (matches.size() <= index || instance == matches.get(index)) {
-                WebElementList.updateListInstances(listIdentifier, searchContext, locator);
-                matches = WebElementList.getListInstances(listIdentifier);
+            List<WebElement> matches;
+            synchronized (listIdentifier) {
+                matches = WebElementListCache.getListInstances(listIdentifier);
+                if (matches.size() <= index || instance == matches.get(index)) {
+                    WebElementListCache.updateListInstances(listIdentifier, searchContext, locator);
+                    matches = WebElementListCache.getListInstances(listIdentifier);
+                }
             }
 
             if (matches.size() <= index) {
@@ -272,20 +273,28 @@ public abstract class RefreshingWebElement implements WebElement {
         }
     }
 
-    private static class WebElementList {
-        // TODO: Make instanceLists synchronized
-        private static final WeakHashMap<ListIdentifier, List<WebElement>> instanceLists = new WeakHashMap<>();
+    private static class WebElementListCache {
+        private static final Map<ListIdentifier, List<WebElement>> instanceLists = Collections.synchronizedMap(new WeakHashMap<>());
 
         private static ListIdentifier getListIdentifier(SearchContext searchContext, By locator) {
             final ListIdentifier newIdentifier = new ListIdentifier(searchContext, locator);
-            Optional<ListIdentifier> exactKeyObj = instanceLists.keySet().stream()
-                    .filter(key -> key.equals(newIdentifier))
-                    .findFirst();
+            Set<ListIdentifier> keys = instanceLists.keySet();
+            Optional<ListIdentifier> exactKeyObj;
+
+            synchronized (instanceLists) {
+                exactKeyObj = keys.stream()
+                        .filter(key -> key.equals(newIdentifier))
+                        .findFirst();
+                if (exactKeyObj.isEmpty()) {
+                    instanceLists.put(newIdentifier, new ArrayList<>());
+                }
+            }
+
             return exactKeyObj.orElse(newIdentifier);
         }
 
         private static List<WebElement> getListInstances(ListIdentifier listIdentifier) {
-            return instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
+            return Objects.requireNonNull(instanceLists.get(listIdentifier), "ListIdentifier is missing from list cache");
         }
 
         private static int updateListInstances(ListIdentifier listIdentifier, SearchContext searchContext, By locator) {
@@ -297,12 +306,7 @@ public abstract class RefreshingWebElement implements WebElement {
                 matches = searchContext.findElements(locator);
             }
 
-            if (matches.isEmpty()) {
-                instanceLists.remove(listIdentifier);
-            }
-            else {
-                instanceLists.put(listIdentifier, matches);
-            }
+            instanceLists.put(listIdentifier, matches);
 
             return matches.size();
         }
