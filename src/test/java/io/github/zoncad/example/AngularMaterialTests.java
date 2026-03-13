@@ -5,23 +5,21 @@ import io.github.zoncad.example.angularmaterial.LandingPage;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.List;
 
 public class AngularMaterialTests {
     WebDriver driver;
 
-    @BeforeTest
+    @BeforeMethod
     public void testSetup() {
         driver = new ChromeDriver();
         driver.get("https://v21.material.angular.dev");
         driver.manage().window().fullscreen();
     }
 
-    @AfterTest
+    @AfterMethod
     public void testCleanup() {
         driver.close();
     }
