@@ -14,64 +14,46 @@ import java.util.stream.IntStream;
 @NullMarked
 public abstract class RefreshingWebElement implements WebElement {
     private static final int MAX_REFRESHES = 1;
-    @Nullable protected final WebDriver driver;
-    @Nullable protected final RefreshingWebElement parent;
+    protected final SearchContext searchContext;
     protected final By locator;
 
     @Nullable protected WebElement instance;
 
-    protected RefreshingWebElement(@Nullable WebDriver driver, @Nullable RefreshingWebElement parent, By locator) {
-        if (driver == null && parent == null) {
-            throw new IllegalArgumentException("Only one of driver or parent may be null");
-        }
-        this.driver = driver;
-        this.parent = parent;
+    protected RefreshingWebElement(SearchContext searchContext, By locator) {
+        this.searchContext = searchContext;
         this.locator = locator;
     }
 
-    public static RefreshingWebElement of(RefreshingWebElement parent, By locator) {
-        return new SpecificRefreshingWebElement(null, parent, locator);
+    public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator) {
+        return new SpecificRefreshingWebElement(searchContext, locator);
     }
 
-    public static RefreshingWebElement of(WebDriver driver, By locator) {
-        return new SpecificRefreshingWebElement(driver, null, locator);
-    }
-
-    public static RefreshingWebElement of(RefreshingWebElement parent, By locator, @Nullable Integer index) {
+    public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, @Nullable Integer index) {
         if (index == null) {
-            return of(parent, locator);
+            return locatedBy(searchContext, locator);
         }
         else {
-            return new IndexedRefreshingWebElement(null, parent, locator, index);
+            return new IndexedRefreshingWebElement(searchContext, locator, index);
         }
     }
 
-    public static RefreshingWebElement of(WebDriver driver, By locator, @Nullable Integer index) {
-        if (index == null) {
-            return of(driver, locator);
-        }
-        else {
-            return new IndexedRefreshingWebElement(driver, null, locator, index);
-        }
-    }
+    public static List<RefreshingWebElement> listLocatedBy(SearchContext searchContext, By locator) {
+        int numMatches = WebElementList.updateListInstances(searchContext, locator);
 
-    public static List<RefreshingWebElement> ofAll(RefreshingWebElement parent, By locator) {
-        return ofAll(null, parent, locator, i -> of(parent, locator, i));
-    }
-
-    public static List<RefreshingWebElement> ofAll(WebDriver driver, By locator) {
-        return ofAll(driver, null, locator, i -> of(driver, locator, i));
+        return IntStream.range(0, numMatches)
+                .mapToObj(i -> locatedBy(searchContext, locator, i))
+                .toList();
     }
 
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof RefreshingWebElement that)) return false;
-        return Objects.equals(driver, that.driver) && Objects.equals(parent, that.parent) && Objects.equals(locator, that.locator);
+        return Objects.equals(searchContext, that.searchContext) && Objects.equals(locator, that.locator);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(driver, parent, locator);
+        return Objects.hash(searchContext, locator);
     }
 
     @Override
@@ -146,12 +128,12 @@ public abstract class RefreshingWebElement implements WebElement {
 
     @Override
     public List<WebElement> findElements(By locator) {
-        return new ArrayList<>(ofAll(this, locator));
+        return new ArrayList<>(listLocatedBy(this, locator));
     }
 
     @Override
     public WebElement findElement(By locator) {
-        return of(this, locator);
+        return locatedBy(this, locator);
     }
 
     @Override
@@ -199,15 +181,6 @@ public abstract class RefreshingWebElement implements WebElement {
 
     abstract protected WebElement getFreshInstance();
 
-    private static List<RefreshingWebElement> ofAll(@Nullable WebDriver driver, @Nullable RefreshingWebElement parent, By locator, Function<Integer, RefreshingWebElement> factoryFunction) {
-        IndexedRefreshingWebElement.WebElementListIdentifier listIdentifier = IndexedRefreshingWebElement.getListIdentifier(parent, locator);
-        int numMatches = IndexedRefreshingWebElement.updateListInstances(driver, listIdentifier, parent, locator);
-
-        return IntStream.range(0, numMatches)
-                .mapToObj(factoryFunction::apply)
-                .toList();
-    }
-
     @NullUnmarked
     private <R> R getInstanceAndThenGetValue(Function<WebElement, R> valueMapper) {
         for (int i = 0; i <= MAX_REFRESHES; ++i) {
@@ -234,22 +207,19 @@ public abstract class RefreshingWebElement implements WebElement {
     }
 
     private static class SpecificRefreshingWebElement extends RefreshingWebElement {
-        private SpecificRefreshingWebElement(@Nullable WebDriver driver, @Nullable RefreshingWebElement parent, By locator) {
-            super(driver, parent, locator);
+        private SpecificRefreshingWebElement(SearchContext searchContext, By locator) {
+            super(searchContext, locator);
             instance = getFreshInstance();
         }
 
         @Override
         protected WebElement getFreshInstance() {
             WebElement freshInstance = null;
-            if (driver != null) {
-                freshInstance = driver.findElement(locator);
-            }
-            else if (parent != null) {
-                freshInstance = parent.getInstanceAndThenGetValue(element -> element.findElement(locator));
+            if (searchContext instanceof RefreshingWebElement) {
+                freshInstance = ((RefreshingWebElement) searchContext).getInstanceAndThenGetValue(element -> element.findElement(locator));
             }
             else {
-                throw new IllegalStateException("Both driver and parent cannot be null");
+                freshInstance = searchContext.findElement(locator);
             }
 
             return freshInstance;
@@ -257,18 +227,16 @@ public abstract class RefreshingWebElement implements WebElement {
     }
 
     private static class IndexedRefreshingWebElement extends RefreshingWebElement {
-        // TODO: Make instanceLists synchronized
-        private static final WeakHashMap<WebElementListIdentifier, List<WebElement>> instanceLists = new WeakHashMap<>();
-        private final WebElementListIdentifier listIdentifier;
+        private final WebElementList.ListIdentifier listIdentifier;
         private final int index;
 
-        private IndexedRefreshingWebElement(@Nullable WebDriver driver, @Nullable RefreshingWebElement parent, By locator, int index) {
-            super(driver, parent, locator);
+        private IndexedRefreshingWebElement(SearchContext searchContext, By locator, int index) {
+            super(searchContext, locator);
             if (index < 0) {
                 throw new IllegalArgumentException("Argument 'index' must be a non-negative integer");
             }
             else {
-                listIdentifier = getListIdentifier(parent, locator);
+                listIdentifier = WebElementList.getListIdentifier(searchContext, locator);
             }
             this.index = index;
             instance = getFreshInstance();
@@ -290,10 +258,10 @@ public abstract class RefreshingWebElement implements WebElement {
         @Override
         protected WebElement getFreshInstance() {
             // TODO: Reevaluate to ensure instance returned is fresh
-            List<WebElement> matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
+            List<WebElement> matches = WebElementList.getListInstances(listIdentifier);
             if (matches.size() <= index || instance == matches.get(index)) {
-                updateListInstances(driver, listIdentifier, parent, locator);
-                matches = instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
+                WebElementList.updateListInstances(listIdentifier, searchContext, locator);
+                matches = WebElementList.getListInstances(listIdentifier);
             }
 
             if (matches.size() <= index) {
@@ -302,17 +270,31 @@ public abstract class RefreshingWebElement implements WebElement {
 
             return matches.get(index);
         }
+    }
 
-        private static int updateListInstances(@Nullable WebDriver driver, WebElementListIdentifier listIdentifier, @Nullable RefreshingWebElement parent, By locator) {
+    private static class WebElementList {
+        // TODO: Make instanceLists synchronized
+        private static final WeakHashMap<ListIdentifier, List<WebElement>> instanceLists = new WeakHashMap<>();
+
+        private static ListIdentifier getListIdentifier(SearchContext searchContext, By locator) {
+            final ListIdentifier newIdentifier = new ListIdentifier(searchContext, locator);
+            Optional<ListIdentifier> exactKeyObj = instanceLists.keySet().stream()
+                    .filter(key -> key.equals(newIdentifier))
+                    .findFirst();
+            return exactKeyObj.orElse(newIdentifier);
+        }
+
+        private static List<WebElement> getListInstances(ListIdentifier listIdentifier) {
+            return instanceLists.getOrDefault(listIdentifier, new ArrayList<>());
+        }
+
+        private static int updateListInstances(ListIdentifier listIdentifier, SearchContext searchContext, By locator) {
             List<WebElement> matches;
-            if (driver != null) {
-                matches = driver.findElements(locator);
-            }
-            else if (parent != null) {
-                matches = parent.getInstance().findElements(locator);
+            if (searchContext instanceof RefreshingWebElement) {
+                matches = ((RefreshingWebElement) searchContext).getInstance().findElements(locator);
             }
             else {
-                throw new IllegalStateException("Both driver and parent cannot be null");
+                matches = searchContext.findElements(locator);
             }
 
             if (matches.isEmpty()) {
@@ -325,16 +307,10 @@ public abstract class RefreshingWebElement implements WebElement {
             return matches.size();
         }
 
-        public static WebElementListIdentifier getListIdentifier(@Nullable RefreshingWebElement parent, By locator) {
-            final WebElementListIdentifier newIdentifier = new WebElementListIdentifier(parent, locator);
-            Optional<WebElementListIdentifier> exactKeyObj = instanceLists.keySet().stream()
-                    .filter(key -> key.equals(newIdentifier))
-                    .findFirst();
-            return exactKeyObj.orElse(newIdentifier);
+        private static int updateListInstances(SearchContext searchContext, By locator) {
+            return updateListInstances(getListIdentifier(searchContext, locator), searchContext, locator);
         }
 
-        private record WebElementListIdentifier(@Nullable RefreshingWebElement parent, By locator) {
-
-        }
+        private record ListIdentifier(SearchContext searchContext, By locator) { }
     }
 }

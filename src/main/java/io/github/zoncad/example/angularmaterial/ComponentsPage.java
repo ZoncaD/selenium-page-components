@@ -25,7 +25,7 @@ public class ComponentsPage extends BasePage implements IComponentHost<Component
     }
 
     public List<PseudoCard> getComponentCardsWithRefreshingWebElements() {
-        return RefreshingWebElement.ofAll(driver, By.cssSelector("a.docs-component-category-list-item")).stream()
+        return RefreshingWebElement.listLocatedBy(driver, By.cssSelector("a.docs-component-category-list-item")).stream()
                 .map(PseudoCard::new)
                 .toList();
     }

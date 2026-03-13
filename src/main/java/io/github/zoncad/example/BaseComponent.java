@@ -15,10 +15,10 @@ public abstract class BaseComponent<T extends IComponentHost<T>> extends Base {
 
         if (parent instanceof BaseComponent<?>) {
             RefreshingWebElement parentElement = ((BaseComponent<?>) parent).root;
-            this.root = RefreshingWebElement.of(parentElement, rootLocator, index);
+            this.root = RefreshingWebElement.locatedBy(parentElement, rootLocator, index);
         }
         else {
-            this.root = RefreshingWebElement.of(driver, rootLocator, index);
+            this.root = RefreshingWebElement.locatedBy(driver, rootLocator, index);
         }
     }
 
