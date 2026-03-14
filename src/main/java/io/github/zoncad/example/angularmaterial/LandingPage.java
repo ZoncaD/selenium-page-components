@@ -1,10 +1,9 @@
 package io.github.zoncad.example.angularmaterial;
 
 import io.github.zoncad.example.BasePage;
-import io.github.zoncad.pagecomponents.IComponentHost;
 import org.openqa.selenium.WebDriver;
 
-public class LandingPage extends BasePage implements IComponentHost<LandingPage> {
+public class LandingPage extends BasePage {
     private final HeaderComponent<LandingPage> headerNav;
 
     public LandingPage(WebDriver driver) {
@@ -14,11 +13,6 @@ public class LandingPage extends BasePage implements IComponentHost<LandingPage>
             throw new IllegalStateException("This is not the landing page");
         }
         headerNav = new HeaderComponent<>(driver, this);
-    }
-
-    @Override
-    public LandingPage getHost() {
-        return this;
     }
 
     public HeaderComponent<LandingPage> getHeaderComponent() {

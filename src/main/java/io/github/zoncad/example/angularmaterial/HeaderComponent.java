@@ -1,12 +1,11 @@
 package io.github.zoncad.example.angularmaterial;
 
 import io.github.zoncad.example.BaseComponent;
-import io.github.zoncad.pagecomponents.IComponentHost;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-public class HeaderComponent<T extends IComponentHost<T>> extends BaseComponent<T> {
+public class HeaderComponent<T> extends BaseComponent<T> {
     private static final By rootLocator = By.tagName("app-navbar");
     private static final String sectionSelector = ".//nav[contains(concat(' ',normalize-space(@class),' '),' docs-navbar-header ')]"
             + "//a[.//span[text()='%s']]";

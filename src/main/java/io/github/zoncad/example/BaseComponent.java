@@ -1,11 +1,10 @@
 package io.github.zoncad.example;
 
-import io.github.zoncad.pagecomponents.IComponentHost;
 import io.github.zoncad.pagecomponents.RefreshingWebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-public abstract class BaseComponent<T extends IComponentHost<T>> extends Base {
+public abstract class BaseComponent<T> extends Base {
     protected T parent;
     protected RefreshingWebElement root;
 

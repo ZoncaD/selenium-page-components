@@ -4,11 +4,10 @@ import io.github.zoncad.example.BasePage;
 import io.github.zoncad.pagecomponents.RefreshingWebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import io.github.zoncad.pagecomponents.IComponentHost;
 
 import java.util.List;
 
-public class ComponentsPage extends BasePage implements IComponentHost<ComponentsPage> {
+public class ComponentsPage extends BasePage {
     private final HeaderComponent<ComponentsPage> headerNav;
     private final SideNavComponent<ComponentsPage> sideNav;
 
@@ -17,11 +16,6 @@ public class ComponentsPage extends BasePage implements IComponentHost<Component
         waitForPresenceOfElementLocated(By.xpath("//*[@id='category-summary']//div[contains(text(), 'Angular Material offers a wide variety of UI components')]"));
         headerNav = new HeaderComponent<>(driver, this);
         sideNav = new SideNavComponent<>(driver, this);
-    }
-
-    @Override
-    public ComponentsPage getHost() {
-        return this;
     }
 
     public List<PseudoCard> getComponentCardsWithRefreshingWebElements() {
