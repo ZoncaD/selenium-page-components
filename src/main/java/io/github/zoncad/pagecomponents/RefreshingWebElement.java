@@ -24,16 +24,37 @@ public abstract class RefreshingWebElement implements WebElement {
         this.locator = locator;
     }
 
+    public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, boolean lazilyLocate) {
+        return locatedBy(searchContext, locator, null, lazilyLocate);
+    }
+
+    public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, @Nullable Integer index, boolean lazilyLocate) {
+        if (index == null) {
+            return new SpecificRefreshingWebElement(searchContext, locator, lazilyLocate);
+        }
+        else {
+            return new IndexedRefreshingWebElement(searchContext, locator, index, lazilyLocate);
+        }
+    }
+
     public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator) {
-        return new SpecificRefreshingWebElement(searchContext, locator);
+        return locatedBy(searchContext, locator, false);
     }
 
     public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, @Nullable Integer index) {
+        return locatedBy(searchContext, locator, index, false);
+    }
+
+    public static RefreshingWebElement lazilyLocatedBy(SearchContext searchContext, By locator) {
+        return lazilyLocatedBy(searchContext, locator, null);
+    }
+
+    public static RefreshingWebElement lazilyLocatedBy(SearchContext searchContext, By locator, @Nullable Integer index) {
         if (index == null) {
-            return locatedBy(searchContext, locator);
+            return locatedBy(searchContext, locator, true);
         }
         else {
-            return new IndexedRefreshingWebElement(searchContext, locator, index);
+            return locatedBy(searchContext, locator, index, true);
         }
     }
 
@@ -207,9 +228,12 @@ public abstract class RefreshingWebElement implements WebElement {
     }
 
     private static class SpecificRefreshingWebElement extends RefreshingWebElement {
-        private SpecificRefreshingWebElement(SearchContext searchContext, By locator) {
+        private SpecificRefreshingWebElement(SearchContext searchContext, By locator, boolean lazyInitialization) {
             super(searchContext, locator);
-            instance = getFreshInstance();
+
+            if (!lazyInitialization) {
+                instance = getFreshInstance();
+            }
         }
 
         @Override
@@ -230,7 +254,7 @@ public abstract class RefreshingWebElement implements WebElement {
         private final WebElementListCache.ListIdentifier listIdentifier;
         private final int index;
 
-        private IndexedRefreshingWebElement(SearchContext searchContext, By locator, int index) {
+        private IndexedRefreshingWebElement(SearchContext searchContext, By locator, int index, boolean lazyInitialization) {
             super(searchContext, locator);
             if (index < 0) {
                 throw new IllegalArgumentException("Argument 'index' must be a non-negative integer");
@@ -238,7 +262,10 @@ public abstract class RefreshingWebElement implements WebElement {
 
             this.index = index;
             listIdentifier = WebElementListCache.getListIdentifier(searchContext, locator);
-            instance = getFreshInstance();
+
+            if (!lazyInitialization) {
+                instance = getFreshInstance();
+            }
         }
 
         @Override
