@@ -1,9 +1,9 @@
 package io.github.zoncad.example.angularmaterial;
 
-import io.github.zoncad.example.BasePage;
+import io.github.zoncad.pagecomponents.Base;
 import org.openqa.selenium.WebDriver;
 
-public class LandingPage extends BasePage {
+public class LandingPage extends Base {
     private final HeaderComponent<LandingPage> headerNav;
 
     public LandingPage(WebDriver driver) {

@@ -1,10 +1,10 @@
 package io.github.zoncad.example.angularmaterial;
 
-import io.github.zoncad.example.BasePage;
+import io.github.zoncad.pagecomponents.Base;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
-public class CdkPage extends BasePage {
+public class CdkPage extends Base {
     private final HeaderComponent<CdkPage> headerNav;
     private final SideNavComponent<CdkPage> sideNav;
 

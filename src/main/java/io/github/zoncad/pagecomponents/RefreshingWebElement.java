@@ -11,6 +11,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
+/**
+ * A WebElement that can refresh itself with a new instance when stale.
+ */
 @NullMarked
 public abstract class RefreshingWebElement implements WebElement {
     private static final int MAX_REFRESHES = 2;
@@ -24,10 +27,28 @@ public abstract class RefreshingWebElement implements WebElement {
         this.locator = locator;
     }
 
+    /**
+     * Creates a RefreshingWebElement wrapper for the WebElement located by the given locator within the searchContext.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElement
+     * @param lazilyLocate boolean indicating when to first attempt to locate the WebElement. If true, the WebElement is
+     *                    located immediately. If false, the WebElement will only be located the first time it is used.
+     * @return the RefreshingWebElement
+     */
     public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, boolean lazilyLocate) {
         return locatedBy(searchContext, locator, null, lazilyLocate);
     }
 
+    /**
+     * Creates a RefreshingWebElement wrapper for the WebElement located by the given locator and index within the
+     * searchContext. If no index is provided, behaves exactly like {@link #locatedBy(SearchContext, By, boolean)}.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElement
+     * @param index null or the non-negative index of the desired WebElement in the list of matches.
+     * @param lazilyLocate boolean indicating when to first attempt to locate the WebElement. If true, the WebElement is
+     *                    located immediately. If false, the WebElement will only be located the first time it is used.
+     * @return the RefreshingWebElement
+     */
     public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, @Nullable Integer index, boolean lazilyLocate) {
         if (index == null) {
             return new SpecificRefreshingWebElement(searchContext, locator, lazilyLocate);
@@ -37,18 +58,48 @@ public abstract class RefreshingWebElement implements WebElement {
         }
     }
 
+    /**
+     * Creates an eagerly initialized RefreshingWebElement wrapper for the WebElement located by the given locator
+     * within the searchContext.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElement
+     * @return the RefreshingWebElement
+     */
     public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator) {
         return locatedBy(searchContext, locator, false);
     }
 
+    /**
+     * Creates an eagerly initialized RefreshingWebElement wrapper for the WebElement located by the given locator and
+     * index within the searchContext. If no index is provided, behaves exactly like {@link #locatedBy(SearchContext, By)}.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElement
+     * @param index null or the non-negative index of the desired WebElement in the list of matches.
+     * @return the RefreshingWebElement
+     */
     public static RefreshingWebElement locatedBy(SearchContext searchContext, By locator, @Nullable Integer index) {
         return locatedBy(searchContext, locator, index, false);
     }
 
+    /**
+     * Creates an eagerly initialized RefreshingWebElement wrapper for the WebElement located by the given locator
+     * within the searchContext.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElement
+     * @return the RefreshingWebElement
+     */
     public static RefreshingWebElement lazilyLocatedBy(SearchContext searchContext, By locator) {
         return lazilyLocatedBy(searchContext, locator, null);
     }
 
+    /**
+     * Creates a lazily initialized RefreshingWebElement wrapper for the WebElement located by the given locator and
+     * index within the searchContext. If no index is provided, behaves exactly like {@link #lazilyLocatedBy(SearchContext, By)}.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElement
+     * @param index null or the non-negative index of the desired WebElement in the list of matches.
+     * @return the RefreshingWebElement
+     */
     public static RefreshingWebElement lazilyLocatedBy(SearchContext searchContext, By locator, @Nullable Integer index) {
         if (index == null) {
             return locatedBy(searchContext, locator, true);
@@ -58,6 +109,12 @@ public abstract class RefreshingWebElement implements WebElement {
         }
     }
 
+    /**
+     * Returns a list of eagerly initialized RefreshingWebElement wrappers for the WebElements located by the given locator within the searchContext.
+     * @param searchContext context to search within, such as a WebDriver or a parent RefreshingWebElement
+     * @param locator locator used to identify WebElements
+     * @return the list of RefreshingWebElements
+     */
     public static List<RefreshingWebElement> listLocatedBy(SearchContext searchContext, By locator) {
         int numMatches = WebElementListCache.updateListInstances(searchContext, locator);
 
@@ -66,15 +123,39 @@ public abstract class RefreshingWebElement implements WebElement {
                 .toList();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof RefreshingWebElement that)) return false;
-        return Objects.equals(searchContext, that.searchContext) && Objects.equals(locator, that.locator);
+    /**
+     * Get an instance of the WebElement this RefreshingWebElement represents. No guarantee that returned instance is not
+     * stale.
+     * @return the unwrapped WebElement
+     */
+    public WebElement getInstance() {
+        if (instance == null) {
+            instance = getFreshInstance();
+        }
+
+        return instance;
     }
 
+    /**
+     * Returns an eagerly initialized RefreshingWebElement wrapper for the WebElement located by the given locator.
+     * Equivalent to calling {@link #locatedBy(SearchContext, By)} with this RefreshingWebElement as the SearchContext.
+     * @param locator locator used to identify WebElement
+     * @return the wrapped WebElement
+     */
     @Override
-    public int hashCode() {
-        return Objects.hash(searchContext, locator);
+    public WebElement findElement(By locator) {
+        return locatedBy(this, locator);
+    }
+
+    /**
+     * Returns a list of eagerly initialized RefreshingWebElement wrappers for the WebElements located by the given
+     * locator. Uses this RefreshingWebElement as the SearchContext.
+     * @param locator locator used to identify WebElements
+     * @return list of wrapped WebElements
+     */
+    @Override
+    public List<WebElement> findElements(By locator) {
+        return new ArrayList<>(listLocatedBy(this, locator));
     }
 
     @Override
@@ -148,16 +229,6 @@ public abstract class RefreshingWebElement implements WebElement {
     }
 
     @Override
-    public List<WebElement> findElements(By locator) {
-        return new ArrayList<>(listLocatedBy(this, locator));
-    }
-
-    @Override
-    public WebElement findElement(By locator) {
-        return locatedBy(this, locator);
-    }
-
-    @Override
     public SearchContext getShadowRoot() {
         return getInstanceAndThenGetValue(WebElement::getShadowRoot);
     }
@@ -192,14 +263,21 @@ public abstract class RefreshingWebElement implements WebElement {
         return getInstanceAndThenGetValue(element -> element.getScreenshotAs(target));
     }
 
-    public WebElement getInstance() {
-        if (instance == null) {
-            instance = getFreshInstance();
-        }
-
-        return instance;
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof RefreshingWebElement that)) return false;
+        return Objects.equals(searchContext, that.searchContext) && Objects.equals(locator, that.locator);
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(searchContext, locator);
+    }
+
+    /**
+     * Locate a new instance of the wrapped WebElement
+     * @return the new WebElement
+     */
     abstract protected WebElement getFreshInstance();
 
     @NullUnmarked
@@ -227,6 +305,9 @@ public abstract class RefreshingWebElement implements WebElement {
         throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refresh" + (MAX_REFRESHES == 1 ? "" : "es"));
     }
 
+    /**
+     * A RefreshingWebElement wrapper for the WebElement located by the given locator within the searchContext.
+     */
     private static class SpecificRefreshingWebElement extends RefreshingWebElement {
         private SpecificRefreshingWebElement(SearchContext searchContext, By locator, boolean lazyInitialization) {
             super(searchContext, locator);
@@ -250,6 +331,10 @@ public abstract class RefreshingWebElement implements WebElement {
         }
     }
 
+    /**
+     * A RefreshingWebElement wrapper for the WebElement at position index within the list of results located by the
+     * given locator within the searchContext.
+     */
     private static class IndexedRefreshingWebElement extends RefreshingWebElement {
         private final WebElementListCache.ListIdentifier listIdentifier;
         private final int index;
@@ -281,6 +366,11 @@ public abstract class RefreshingWebElement implements WebElement {
             return Objects.hash(super.hashCode(), listIdentifier, index);
         }
 
+        /**
+         * Gets a newer instance of the wrapped WebElement. May not be fresh if cache contains newer instance that
+         * happens to be stale.
+         * @return the newer WebElement
+         */
         @Override
         protected WebElement getFreshInstance() {
             List<WebElement> matches;
@@ -300,6 +390,9 @@ public abstract class RefreshingWebElement implements WebElement {
         }
     }
 
+    /**
+     * Cache of WebElements used for index-based RefreshingWebElements.
+     */
     private static class WebElementListCache {
         private static final Map<ListIdentifier, List<WebElement>> instanceLists = Collections.synchronizedMap(new WeakHashMap<>());
 

@@ -1,4 +1,4 @@
-package io.github.zoncad.example;
+package io.github.zoncad.pagecomponents;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;

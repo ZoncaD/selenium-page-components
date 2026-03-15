@@ -1,6 +1,6 @@
 package io.github.zoncad.example.angularmaterial;
 
-import io.github.zoncad.example.BaseComponent;
+import io.github.zoncad.pagecomponents.BaseComponent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;

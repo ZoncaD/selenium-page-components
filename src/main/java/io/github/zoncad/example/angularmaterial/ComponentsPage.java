@@ -1,13 +1,13 @@
 package io.github.zoncad.example.angularmaterial;
 
-import io.github.zoncad.example.BasePage;
+import io.github.zoncad.pagecomponents.Base;
 import io.github.zoncad.pagecomponents.RefreshingWebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
 import java.util.List;
 
-public class ComponentsPage extends BasePage {
+public class ComponentsPage extends Base {
     private final HeaderComponent<ComponentsPage> headerNav;
     private final SideNavComponent<ComponentsPage> sideNav;
 

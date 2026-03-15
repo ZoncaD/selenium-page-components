@@ -1,8 +1,9 @@
 package io.github.zoncad.example.angularmaterial;
 
-import io.github.zoncad.example.BaseComponent;
+import io.github.zoncad.pagecomponents.BaseComponent;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 
 import java.util.List;
 
@@ -13,6 +14,6 @@ public class SideNavComponent<T> extends BaseComponent<T> {
     }
 
     public List<String> getOptions() {
-        return root.findElements(By.xpath(".//a/span")).stream().map(ele -> ele.getText()).toList();
+        return root.findElements(By.xpath(".//a/span")).stream().map(WebElement::getText).toList();
     }
 }
