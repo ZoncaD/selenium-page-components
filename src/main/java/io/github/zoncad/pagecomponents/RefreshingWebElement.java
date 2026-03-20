@@ -138,9 +138,29 @@ public abstract class RefreshingWebElement implements WebElement {
 
     /**
      * Returns an eagerly initialized RefreshingWebElement wrapper for the WebElement located by the given locator.
+     * Equivalent to calling {@link #findElement(By)}.
+     * @param locator locator used to identify WebElement
+     * @return the RefreshingWebElement
+     */
+    public RefreshingWebElement findRefreshingElement(By locator) {
+        return locatedBy(this, locator);
+    }
+
+    /**
+     * Returns a list of eagerly initialized RefreshingWebElement wrappers for the WebElements located by the given
+     * locator. Uses this RefreshingWebElement as the SearchContext.
+     * @param locator locator used to identify WebElements
+     * @return list of RefreshingWebElements
+     */
+    public List<RefreshingWebElement> findRefreshingElements(By locator) {
+        return listLocatedBy(this, locator);
+    }
+
+    /**
+     * Returns an eagerly initialized RefreshingWebElement wrapper for the WebElement located by the given locator.
      * Equivalent to calling {@link #locatedBy(SearchContext, By)} with this RefreshingWebElement as the SearchContext.
      * @param locator locator used to identify WebElement
-     * @return the wrapped WebElement
+     * @return the RefreshingWebElement as a WebElement
      */
     @Override
     public WebElement findElement(By locator) {
@@ -151,7 +171,7 @@ public abstract class RefreshingWebElement implements WebElement {
      * Returns a list of eagerly initialized RefreshingWebElement wrappers for the WebElements located by the given
      * locator. Uses this RefreshingWebElement as the SearchContext.
      * @param locator locator used to identify WebElements
-     * @return list of wrapped WebElements
+     * @return list of RefreshingWebElements as WebElements
      */
     @Override
     public List<WebElement> findElements(By locator) {
@@ -420,7 +440,7 @@ public abstract class RefreshingWebElement implements WebElement {
         private static int updateListInstances(ListIdentifier listIdentifier, SearchContext searchContext, By locator) {
             List<WebElement> matches;
             if (searchContext instanceof RefreshingWebElement) {
-                matches = ((RefreshingWebElement) searchContext).getInstance().findElements(locator);
+                matches = ((RefreshingWebElement) searchContext).getInstanceAndThenGetValue(element -> element.findElements(locator));
             }
             else {
                 matches = searchContext.findElements(locator);
