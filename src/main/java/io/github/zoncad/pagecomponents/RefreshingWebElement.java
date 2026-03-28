@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
  * A WebElement that can refresh itself with a new instance when stale.
  */
 @NullMarked
-public abstract class RefreshingWebElement implements WebElement {
+public abstract class RefreshingWebElement implements WebElement, WrapsElement {
     private static final int MAX_REFRESHES = 2;
     protected final SearchContext searchContext;
     protected final By locator;
@@ -128,9 +128,9 @@ public abstract class RefreshingWebElement implements WebElement {
      * stale.
      * @return the unwrapped WebElement
      */
-    public WebElement getInstance() {
+    public WebElement getWrappedElement() {
         if (instance == null) {
-            instance = getFreshInstance();
+            instance = getInstance();
         }
 
         return instance;
@@ -149,6 +149,7 @@ public abstract class RefreshingWebElement implements WebElement {
     /**
      * Returns a list of eagerly initialized RefreshingWebElement wrappers for the WebElements located by the given
      * locator. Uses this RefreshingWebElement as the SearchContext.
+     *
      * @param locator locator used to identify WebElements
      * @return list of RefreshingWebElements
      */
@@ -298,31 +299,35 @@ public abstract class RefreshingWebElement implements WebElement {
      * Locate a new instance of the wrapped WebElement
      * @return the new WebElement
      */
-    abstract protected WebElement getFreshInstance();
+    abstract protected WebElement getInstance();
 
     @NullUnmarked
     private <R> R getInstanceAndThenGetValue(Function<WebElement, R> valueMapper) {
+        StaleElementReferenceException lastException = null;
         for (int i = 0; i <= MAX_REFRESHES; ++i) {
             try {
-                return valueMapper.apply(getInstance());
+                return valueMapper.apply(getWrappedElement());
             } catch (StaleElementReferenceException ex) {
                 instance = null;
+                lastException = ex;
             }
         }
-        throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refresh" + (MAX_REFRESHES == 1 ? "" : "es"));
+        throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refresh" + (MAX_REFRESHES == 1 ? "" : "es"), lastException);
     }
 
     @NullUnmarked
     private void getInstanceAndThenPerform(Consumer<WebElement> action) {
+        StaleElementReferenceException lastException = null;
         for (int i = 0; i <= MAX_REFRESHES; ++i) {
             try {
-                action.accept(getInstance());
+                action.accept(getWrappedElement());
                 return;
             } catch (StaleElementReferenceException ex) {
                 instance = null;
+                lastException = ex;
             }
         }
-        throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refresh" + (MAX_REFRESHES == 1 ? "" : "es"));
+        throw new StaleElementReferenceException("Element reference stale after " + MAX_REFRESHES + " refresh" + (MAX_REFRESHES == 1 ? "" : "es"), lastException);
     }
 
     /**
@@ -333,12 +338,12 @@ public abstract class RefreshingWebElement implements WebElement {
             super(searchContext, locator);
 
             if (!lazyInitialization) {
-                instance = getFreshInstance();
+                instance = getInstance();
             }
         }
 
         @Override
-        protected WebElement getFreshInstance() {
+        protected WebElement getInstance() {
             WebElement freshInstance = null;
             if (searchContext instanceof RefreshingWebElement) {
                 freshInstance = ((RefreshingWebElement) searchContext).getInstanceAndThenGetValue(element -> element.findElement(locator));
@@ -369,7 +374,7 @@ public abstract class RefreshingWebElement implements WebElement {
             listIdentifier = WebElementListCache.getListIdentifier(searchContext, locator);
 
             if (!lazyInitialization) {
-                instance = getFreshInstance();
+                instance = getInstance();
             }
         }
 
@@ -392,7 +397,7 @@ public abstract class RefreshingWebElement implements WebElement {
          * @return the newer WebElement
          */
         @Override
-        protected WebElement getFreshInstance() {
+        protected WebElement getInstance() {
             List<WebElement> matches;
             synchronized (listIdentifier) {
                 matches = WebElementListCache.getListInstances(listIdentifier);
