@@ -1,21 +1,23 @@
 package io.github.zoncad.example.angularmaterial;
 
-import io.github.zoncad.pagecomponents.Base;
+import io.github.zoncad.pagecomponents.BaseLoadable;
 import io.github.zoncad.pagecomponents.RefreshingWebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.util.List;
 
-public class ComponentsPage extends Base {
+public class ComponentsPage extends BaseLoadable {
     private final HeaderComponent<ComponentsPage> headerNav;
     private final SideNavComponent<ComponentsPage> sideNav;
 
     public ComponentsPage(WebDriver driver) {
         super(driver);
-        waitForPresenceOfElementLocated(By.xpath("//*[@id='category-summary']//div[contains(text(), 'Angular Material offers a wide variety of UI components')]"));
         headerNav = new HeaderComponent<>(driver, this);
         sideNav = new SideNavComponent<>(driver, this);
+        waitUntilLoaded(this);
     }
 
     public List<PseudoCard> getComponentCardsWithRefreshingWebElements() {
@@ -36,5 +38,14 @@ public class ComponentsPage extends Base {
 
     public SideNavComponent<ComponentsPage> getSideNavComponent() {
         return sideNav;
+    }
+
+    @Override
+    public ExpectedCondition<Boolean> isLoaded() {
+        return ExpectedConditions.and(
+                ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id='category-summary']//div[contains(text(), 'Angular Material offers a wide variety of UI components')]")),
+                headerNav.isLoaded(),
+                sideNav.isLoaded()
+        );
     }
 }

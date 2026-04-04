@@ -21,7 +21,7 @@ public class AngularMaterialTests {
 
     @AfterMethod
     public void testCleanup() {
-        driver.close();
+        driver.quit();
     }
 
     @Test
