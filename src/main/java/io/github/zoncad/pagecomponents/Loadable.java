@@ -8,4 +8,10 @@ public interface Loadable {
      * @return ExpectedCondition that determines if component is loaded.
      */
     ExpectedCondition<Boolean> isLoaded();
+
+    /**
+     * Loads this Loadable and waits for it to finish loading.
+     * @return this loadable in a loaded state
+     */
+    Loadable load();
 }

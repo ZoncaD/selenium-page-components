@@ -1,12 +1,13 @@
 package io.github.zoncad.example.angularmaterial;
 
 import io.github.zoncad.pagecomponents.BaseComponent;
-import io.github.zoncad.pagecomponents.Loadable;
+import io.github.zoncad.pagecomponents.BaseLoadable;
+import io.github.zoncad.pagecomponents.RefreshingWebElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
-public class HeaderComponent<T extends Loadable> extends BaseComponent<T> {
+public class HeaderComponent<T extends BaseLoadable> extends BaseComponent<T> {
     private static final By rootLocator = By.tagName("app-navbar");
     private static final String sectionSelector = ".//nav[contains(concat(' ',normalize-space(@class),' '),' docs-navbar-header ')]"
             + "//a[.//span[text()='%s']]";
@@ -30,8 +31,4 @@ public class HeaderComponent<T extends Loadable> extends BaseComponent<T> {
         menu.findElement(By.xpath(String.format(".//button[@mat-menu-item and .//span[text()='%s']]", themeName))).click();
         return parent;
     }
-
-    /*
-     * Other methods
-     */
 }

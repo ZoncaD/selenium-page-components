@@ -8,11 +8,12 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 
 /**
  * Base class for page components.
- * @param <T> type of component's parent
+ *
+ * @param <P> type of component's parent
  */
 @NullMarked
-public abstract class BaseComponent<T extends Loadable> extends BaseLoadable {
-    protected T parent;
+public abstract class BaseComponent<P> extends BaseLoadable {
+    protected P parent;
     protected RefreshingWebElement root;
 
     /**
@@ -22,7 +23,7 @@ public abstract class BaseComponent<T extends Loadable> extends BaseLoadable {
      * @param listLocator locator for a desired list elements, within the search context of the parent.
      * @param index index of the desired element within the list of elements found with the listLocator
      */
-    public BaseComponent(WebDriver driver, T parent, By listLocator, int index) {
+    public BaseComponent(WebDriver driver, P parent, By listLocator, int index) {
         this(driver, parent, listLocator, Integer.valueOf(index));
     }
 
@@ -32,7 +33,7 @@ public abstract class BaseComponent<T extends Loadable> extends BaseLoadable {
      * @param parent parent of this component
      * @param rootLocator locator for this component's root element, within the search context of the parent.
      */
-    public BaseComponent(WebDriver driver, T parent, By rootLocator) {
+    public BaseComponent(WebDriver driver, P parent, By rootLocator) {
         this(driver, parent, rootLocator, null);
     }
 
@@ -41,11 +42,11 @@ public abstract class BaseComponent<T extends Loadable> extends BaseLoadable {
      * @param driver WebDriver instance
      * @param parent parent of this component
      */
-    public BaseComponent(WebDriver driver, T parent) {
+    public BaseComponent(WebDriver driver, P parent) {
         this(driver, parent, null, null);
     }
 
-    private BaseComponent(WebDriver driver, T parent, @Nullable By rootLocator, @Nullable Integer index) {
+    private BaseComponent(WebDriver driver, P parent, @Nullable By rootLocator, @Nullable Integer index) {
         super(driver);
         this.parent = parent;
 

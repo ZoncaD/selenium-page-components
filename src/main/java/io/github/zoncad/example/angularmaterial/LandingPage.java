@@ -11,7 +11,7 @@ public class LandingPage extends BaseLoadable {
     public LandingPage(WebDriver driver) {
         super(driver);
         headerNav = new HeaderComponent<>(driver, this);
-        waitUntilLoaded(this);
+        load();
     }
 
     public HeaderComponent<LandingPage> getHeaderComponent() {

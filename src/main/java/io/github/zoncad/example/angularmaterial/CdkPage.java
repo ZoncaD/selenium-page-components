@@ -14,7 +14,7 @@ public class CdkPage extends BaseLoadable {
         super(driver);
         headerNav = new HeaderComponent<>(driver, this);
         sideNav = new SideNavComponent<>(driver, this);
-        waitUntilLoaded(this);
+        load();
     }
 
     public HeaderComponent<CdkPage> getHeaderComponent() {
