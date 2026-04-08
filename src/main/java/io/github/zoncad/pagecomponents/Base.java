@@ -42,6 +42,6 @@ public abstract class Base {
      * @param <R> return type of the ExpectedCondition
      */
     protected <R> ExpectedCondition<R> same(RefreshingWebElement instance, Function<WebElement, ExpectedCondition<R>> meetsCondition) {
-        return ExpectedConditions.refreshed(driver -> meetsCondition.apply(instance).apply(driver));
+        return ExpectedConditions.refreshed(driver -> meetsCondition.apply(instance.getWrappedElement()).apply(driver));
     }
 }
